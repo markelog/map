@@ -7,10 +7,10 @@ import (
 )
 
 // WriteFile writes file in a bit more convenient way
-func WriteFile(path, content string) error {
+func WriteFile(path, content string) (err error) {
 	data := []byte(content)
 
-	err := ioutil.WriteFile(path, data, 0700)
+	err = ioutil.WriteFile(path, data, 0700)
 	if err != nil {
 		return errors.New(err)
 	}

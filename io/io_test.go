@@ -1,6 +1,7 @@
 package io_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 
@@ -16,6 +17,7 @@ var _ = Describe("io", func() {
 		filename string
 		data     []byte
 		perm     os.FileMode
+		result   error
 	)
 	BeforeEach(func() {
 		monkey.Patch(ioutil.WriteFile, func(
@@ -27,7 +29,7 @@ var _ = Describe("io", func() {
 			data = _data
 			perm = _perm
 
-			return nil
+			return result
 		})
 	})
 
@@ -51,6 +53,13 @@ var _ = Describe("io", func() {
 			Expect(err).To(BeNil())
 			Expect(filename).To(Equal(path))
 			Expect(string(data)).To(Equal(data))
+		})
+
+		It("Correctly returns an error", func() {
+			result = errors.New("test")
+			err := WriteFile("test-path", "test-data")
+
+			Expect(err.Error()).To(Equal("test"))
 		})
 	})
 })
