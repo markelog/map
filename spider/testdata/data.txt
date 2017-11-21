@@ -1,0 +1,30 @@
+&spider.Result{
+  Assets: map[string][]string{
+    "audio": []string{
+      "",
+      "foo.wav",
+    },
+    "images": []string{
+      "test.png",
+    },
+    "scripts": []string{
+      "test.js",
+    },
+    "styles": []string{
+      "test.css",
+    },
+    "video": []string{
+      "test.gif",
+      "test.webm",
+      "test.mp4",
+      "test.ogv",
+    },
+  },
+  URL: "http://$URL",
+  Name: "test",
+  Links: []string{
+    "https://github.com",
+  },
+  Broken: nil,
+  Children: nil,
+}
