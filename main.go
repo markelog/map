@@ -33,10 +33,10 @@ const example = `
   Specify maximum amount of links to check
   $ map http://example.com -r yaml --max=50
 
-	Pipe it
+  Pipe it
   $ map http://example.com -r yaml -m 50 > example.com.json
 
-	Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
+  Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
   $ map http://example.com -r yaml -m 50 --out=./example.com.json
 `
 
