@@ -52,10 +52,9 @@ var _ = Describe("spider", func() {
 			var (
 				data, _    = ioutil.ReadFile("testdata/data.txt")
 				json       = string(data)
-				instance   = New(ts.URL, 20)
 				urlData, _ = url.Parse(ts.URL)
 				expected   = strings.Replace(json, "$URL", urlData.Host, 1)
-				progress   = instance.Crawl()
+				progress   = spidy.Crawl()
 			)
 
 			expected = strings.TrimSpace(expected)
@@ -71,11 +70,7 @@ var _ = Describe("spider", func() {
 
 	Describe("Get", func() {
 		It("Should correct validate the input", func() {
-			var (
-				instance = New(ts.URL, 20)
-			)
-
-			result, err := instance.Get()
+			result, err := spidy.Get()
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(reflect.TypeOf(result).String()).To(Equal("*spider.Result"))
