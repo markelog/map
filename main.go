@@ -58,7 +58,7 @@ func Run(cmd *cobra.Command, args []string) {
 
 	// Reporter has to exist
 	if reporters.Exist(reporter) == false {
-		err := errors.New(`Repoter "` + reporter + `" doesn't not exist`)
+		err := errors.New(`Reporter "` + reporter + `" does not exist`)
 		print.Error(err, 2)
 
 		return

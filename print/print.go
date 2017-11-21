@@ -36,9 +36,6 @@ func Error(err error, exitCode int) {
 	ShowError(err)
 
 	fmt.Println()
-	fmt.Println()
-	fmt.Println(`Maybe try "--help" flag?`)
-	fmt.Println()
 
 	os.Exit(exitCode)
 }
