@@ -36,14 +36,14 @@ const example = `
 	Pipe it
   $ map http://example.com -r yaml -m 50 > example.com.json
 
-	Or use "out" flag (so you can see the spinner :)
+	Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
   $ map http://example.com -r yaml -m 50 --out=./example.com.json
 `
 
 // Command config
 var Command = &cobra.Command{
 	Use:     "map https://example.com",
-	Short:   "Create map of the site",
+	Short:   "Site mapper",
 	Example: example,
 	Run:     Run,
 }
