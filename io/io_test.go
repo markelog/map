@@ -16,10 +16,11 @@ import (
 var _ = Describe("io", func() {
 	Describe("WriteFile", func() {
 		var (
-			filename string
-			data     []byte
-			perm     os.FileMode
-			result   error
+			filename  string
+			result    string
+			data      []byte
+			perm      os.FileMode
+			badOutput error
 		)
 		BeforeEach(func() {
 			monkey.Patch(ioutil.WriteFile, func(
@@ -31,12 +32,15 @@ var _ = Describe("io", func() {
 				data = _data
 				perm = _perm
 
-				return result
+				result = string(data)
+
+				return badOutput
 			})
 		})
 
 		AfterEach(func() {
 			filename = ""
+			result = ""
 			data = nil
 			perm = os.FileMode(0)
 
@@ -45,19 +49,20 @@ var _ = Describe("io", func() {
 
 		It("Correctly passes the data to WriteFile method", func() {
 			var (
-				path = "test-path"
-				data = "test-data"
+				path     = "test-path"
+				testData = "qqqqq"
 
-				err = WriteFile(path, data)
+				badOutput = WriteFile(path, testData)
 			)
 
-			Expect(err).To(BeNil())
+			Expect(badOutput).To(BeNil())
 			Expect(filename).To(Equal(path))
-			Expect(string(data)).To(Equal(data))
+			Expect(perm).To(Equal(os.FileMode(0700)))
+			Expect(testData).To(Equal(result))
 		})
 
 		It("Correctly returns an error", func() {
-			result = errors.New("test")
+			badOutput = errors.New("test")
 			err := WriteFile("test-path", "test-data")
 
 			Expect(err.Error()).To(Equal("test"))
