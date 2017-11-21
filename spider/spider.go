@@ -35,9 +35,10 @@ type Spider struct {
 	Progress chan *Progress
 	Error    error
 
+	isDone     bool
+	domain     string
 	list       *list.List
 	collector  *colly.Collector
-	domain     string
 	validation *validation.Validation
 }
 
@@ -61,6 +62,7 @@ func New(domain string, max int) *Spider {
 		collector:  collector,
 		validation: validation.New(domain),
 		domain:     domain,
+		isDone:     false,
 	}
 }
 
@@ -69,10 +71,12 @@ func (spider *Spider) Crawl() (progress chan *Progress) {
 	spider.setError()
 	spider.setWalker()
 
-	spider.Error = spider.collector.Visit(spider.domain)
-
 	go func() {
+		spider.Error = spider.collector.Visit(spider.domain)
+
 		spider.collector.Wait()
+
+		spider.isDone = true
 		close(spider.Progress)
 	}()
 
@@ -98,7 +102,9 @@ func (spider *Spider) Validate() (err error) {
 
 // emitData emits data for the intermediate data
 func (spider *Spider) emitData(data *Progress) {
-	spider.Progress <- data
+	if spider.isDone == false {
+		spider.Progress <- data
+	}
 }
 
 // setError sets error handler for the spider
