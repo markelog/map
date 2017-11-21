@@ -2,6 +2,8 @@
 
 > Generates map site
 
+Simple site map generator, supports couple reporters, depth levels and etc
+
 ## Install
 ```sh
 go get github.com/markelog/map
