@@ -89,7 +89,6 @@ var _ = Describe("io", func() {
 		It("Gets assets", func() {
 			expected := `map[string][]string{
   "audio": []string{
-    "",
     "foo.wav",
   },
   "images": []string{
@@ -108,6 +107,7 @@ var _ = Describe("io", func() {
     "test.ogv",
   },
 }`
+
 			Expect(litter.Sdump(data.Assets())).To(Equal(expected))
 		})
 	})

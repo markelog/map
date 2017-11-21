@@ -125,7 +125,7 @@ func (collect Collect) Video() (video []string) {
 func (collect Collect) Audio() (audio []string) {
 	collect.doc.Find("audio").Each(func(i int, node *goquery.Selection) {
 		src, exist := node.Attr("src")
-		if exist == false {
+		if exist {
 			audio = append(audio, src)
 		}
 

@@ -1,7 +1,6 @@
 &spider.Result{
   Assets: map[string][]string{
     "audio": []string{
-      "",
       "foo.wav",
     },
     "images": []string{
