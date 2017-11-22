@@ -34,10 +34,10 @@ const example = `
   $ map http://example.com -r yaml --max=50
 
   Pipe it
-  $ map http://example.com -r yaml -m 50 > example.com.json
+  $ map http://example.com -r yaml -m 50 > example.com.yaml
 
   Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
-  $ map http://example.com -r yaml -m 50 --out=./example.com.json
+  $ map http://example.com -r yaml -m 50 --out=./example.com.yaml
 `
 
 // Command config
