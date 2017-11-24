@@ -24,7 +24,7 @@ var out string
 
 // Command example
 const example = `
-  Create map and output it to the terminal1
+  Create map and output it to the terminal
   $ map http://example.com
 
   Create map and output map in yaml form
