@@ -1,7 +1,9 @@
+// Package print provides methods to pretty printing data into the console
 package print
 
 import (
-	"fmt"
+	"log"
+	"net/url"
 	"os"
 
 	"github.com/mgutz/ansi"
@@ -21,10 +23,19 @@ func ShowError(err error) {
 		return
 	}
 
-	fmt.Println()
-	fmt.Print(ansi.Color("> ", "red"))
+	stderr := log.New(os.Stderr, "", 0)
+	red := ansi.Color("> ", "red")
 
-	fmt.Fprintf(os.Stderr, "%v", err)
+	stderr.Println()
+
+	_, ok := err.(*url.Error)
+
+	if ok {
+		stderr.Printf(red+"Error on %v:", err)
+
+	} else {
+		stderr.Printf(red+"%v", err)
+	}
 }
 
 // Error shows the error and exit the program with provided exit code
@@ -34,8 +45,6 @@ func Error(err error, exitCode int) {
 	}
 
 	ShowError(err)
-
-	fmt.Println()
 
 	os.Exit(exitCode)
 }
@@ -48,19 +57,19 @@ func Spin(progress chan *spider.Progress) (exitCode int) {
 
 	// Work spinner
 	spin.Start()
-	fmt.Println()
+
 	for result := range progress {
 		if result.Error != nil {
-			exitCode = 2
+			exitCode = 0
 
+			spin.Stop()
 			ShowError(result.Error)
-			fmt.Println()
-
-			continue
+			return
 		}
 
 		spin.Set(result.Data.URL)
 	}
+
 	spin.Stop()
 
 	return

@@ -1,3 +1,5 @@
+// Package collect provides methods for collecting the data
+// from the DOM document
 package collect
 
 import (

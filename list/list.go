@@ -1,3 +1,4 @@
+// Package list create hash instance and checks value presence
 package list
 
 import (

@@ -1,14 +1,16 @@
+// Package spider goes through the site tree
+// and outputs the meta tree data consumable for reporters
 package spider
 
 import (
 	"net/url"
-	"runtime"
+	"strings"
+	"sync"
 
 	"github.com/gocolly/colly"
 
 	"github.com/markelog/map/collect"
 	"github.com/markelog/map/io"
-	"github.com/markelog/map/list"
 	"github.com/markelog/map/validation"
 )
 
@@ -26,43 +28,55 @@ type Result struct {
 // Progress intermediate data
 type Progress struct {
 	Data  *Result
+	Done  bool
 	Error error
 }
 
 // Spider configuration
 type Spider struct {
-	Result   *Result
-	Progress chan *Progress
-	Error    error
+	Result *Result
+	Error  error
 
-	isDone     bool
-	domain     string
-	list       *list.List
+	Progress chan *Progress
+	isDone   bool
+
+	waitGroup *sync.WaitGroup
+	mutex     *sync.Mutex
+
+	path       string
 	collector  *colly.Collector
 	validation *validation.Validation
 }
 
 // New returns new instance of Spider
-func New(domain string, max int) *Spider {
-	data, _ := url.Parse(domain)
+func New(path, domains string) *Spider {
+
+	var (
+		data, _        = url.Parse(path)
+		domain         = data.Host
+		allowedDomains = []string{domain}
+	)
+
+	if len(domains) > 0 {
+		allowedDomains = append(strings.Split(domains, ","), domain)
+	}
 
 	collector := colly.NewCollector()
-	collector.AllowedDomains = []string{data.Host}
-	collector.MaxDepth = max
+	collector.AllowedDomains = allowedDomains
 
-	collector.Limit(&colly.LimitRule{
-		DomainGlob:  "*",
-		Parallelism: runtime.NumCPU(),
-	})
+	// Be explicit
+	collector.AllowURLRevisit = false
 
 	return &Spider{
+		isDone:   false,
 		Progress: make(chan *Progress),
 
-		list:       list.New(),
+		waitGroup: &sync.WaitGroup{},
+		mutex:     &sync.Mutex{},
+
+		path:       path,
 		collector:  collector,
-		validation: validation.New(domain),
-		domain:     domain,
-		isDone:     false,
+		validation: validation.New(path),
 	}
 }
 
@@ -71,13 +85,16 @@ func (spider *Spider) Crawl() (progress chan *Progress) {
 	spider.setError()
 	spider.setWalker()
 
-	go func() {
-		spider.Error = spider.collector.Visit(spider.domain)
+	spider.collector.Visit(spider.path)
 
+	go func() {
+		spider.waitGroup.Wait()
 		spider.collector.Wait()
 
+		spider.mutex.Lock()
 		spider.isDone = true
 		close(spider.Progress)
+		spider.mutex.Unlock()
 	}()
 
 	return spider.Progress
@@ -85,7 +102,13 @@ func (spider *Spider) Crawl() (progress chan *Progress) {
 
 // Get final result
 func (spider Spider) Get() (*Result, error) {
+	spider.waitGroup.Wait()
 	spider.collector.Wait()
+
+	spider.mutex.Lock()
+	spider.isDone = true
+	close(spider.Progress)
+	spider.mutex.Unlock()
 
 	return spider.Result, spider.Error
 }
@@ -102,6 +125,9 @@ func (spider *Spider) Validate() (err error) {
 
 // emitData emits data for the intermediate data
 func (spider *Spider) emitData(data *Progress) {
+	spider.mutex.Lock()
+	defer spider.mutex.Unlock()
+
 	if spider.isDone == false {
 		spider.Progress <- data
 	}
@@ -110,6 +136,23 @@ func (spider *Spider) emitData(data *Progress) {
 // setError sets error handler for the spider
 func (spider *Spider) setError() {
 	spider.collector.OnError(func(response *colly.Response, err error) {
+		spider.mutex.Lock()
+		defer spider.mutex.Unlock()
+
+		// If first urls breaks
+		if spider.Result == nil {
+			spider.waitGroup.Add(1)
+
+			go func() {
+				spider.emitData(&Progress{
+					Error: err,
+				})
+				spider.waitGroup.Done()
+			}()
+
+			return
+		}
+
 		if response.Ctx == nil {
 			return
 		}
@@ -128,18 +171,15 @@ func (spider *Spider) setWalker() {
 	spider.collector.OnResponse(func(response *colly.Response) {
 		body := response.Body
 
-		// Links might lead to the same page, which we might already
-		// tackled, so we have to check the response body instead
-		if spider.list.Has(body) {
-			return
-		}
-		spider.list.Add(body)
-
 		doc, err := io.MakeDoc(body)
 		if err != nil {
-			go spider.emitData(&Progress{
-				Error: err,
-			})
+			spider.waitGroup.Add(1)
+			go func() {
+				spider.emitData(&Progress{
+					Error: err,
+				})
+				spider.waitGroup.Done()
+			}()
 			return
 		}
 
@@ -152,13 +192,17 @@ func (spider *Spider) setWalker() {
 			URL:    response.Request.URL.String(),
 		}
 
-		if getParent(response) == nil {
+		if spider.Result == nil {
 			spider.Result = output
 		}
 
-		go spider.emitData(&Progress{
-			Data: output,
-		})
+		spider.waitGroup.Add(1)
+		go func() {
+			spider.emitData(&Progress{
+				Data: output,
+			})
+			spider.waitGroup.Done()
+		}()
 
 		spider.appendToParent(output, response)
 		spider.request(output, output.Links)
@@ -167,11 +211,16 @@ func (spider *Spider) setWalker() {
 
 // request multiple links from provided arguments
 func (spider Spider) request(output *Result, links []string) {
+	spider.waitGroup.Add(len(links))
+
 	for _, link := range links {
 		context := colly.NewContext()
 		context.Put("parent", output)
 
-		go spider.collector.Request("GET", link, nil, context, nil)
+		go func(link string) {
+			spider.collector.Request("GET", link, nil, context, nil)
+			spider.waitGroup.Done()
+		}(link)
 	}
 }
 
@@ -190,6 +239,8 @@ func getParent(response *colly.Response) (parent *Result) {
 func (spider Spider) appendToParent(output *Result, response *colly.Response) {
 	parent := getParent(response)
 	if parent != nil {
+		spider.mutex.Lock()
 		parent.Children = append(parent.Children, output)
+		spider.mutex.Unlock()
 	}
 }

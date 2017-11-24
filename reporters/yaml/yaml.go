@@ -1,3 +1,4 @@
+// Package yaml provides the yaml reporter
 package yaml
 
 import (

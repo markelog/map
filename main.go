@@ -1,3 +1,4 @@
+// Package main is the CLI wrapper for the crawler
 package main
 
 import (
@@ -16,11 +17,11 @@ import (
 // Reporter name
 var reporter string
 
-// Max limits the recursion depth of visited URLs
-var max int
-
 // Out is the path data file
 var out string
+
+// Domains to follow
+var domains string
 
 // Command example
 const example = `
@@ -30,14 +31,14 @@ const example = `
   Create map and output map in yaml form
   $ map http://example.com --reporter=yaml
 
-  Specify maximum amount of links to check
-  $ map http://example.com -r yaml --max=50
-
   Pipe it
-  $ map http://example.com -r yaml -m 50 > example.com.yaml
+  $ map http://example.com -r yaml > example.com.yaml
 
   Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
-  $ map http://example.com -r yaml -m 50 --out=./example.com.yaml
+  $ map http://example.com -r yaml --out=./example.com.yaml
+
+	With additional domains
+	$ map https://example.com --domains=www.google.ru,www.google.com
 `
 
 // Command config
@@ -64,7 +65,7 @@ func Run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	crawler := spider.New(args[0], max)
+	crawler := spider.New(args[0], domains)
 
 	// Validate the input
 	print.Error(crawler.Validate(), 2)
@@ -79,11 +80,13 @@ func Run(cmd *cobra.Command, args []string) {
 	serialized, err := reporters.Execute(reporter, data)
 	print.Error(err, 1)
 
-	// Either print to the console or save it to a file
-	if out == "" {
-		fmt.Println(serialized)
-	} else {
-		print.Error(io.WriteFile(out, serialized), 1)
+	if len(serialized) > 0 {
+		// Either print to the console or save it to a file
+		if len(out) > 0 {
+			fmt.Println(serialized)
+		} else {
+			print.Error(io.WriteFile(out, serialized), 1)
+		}
 	}
 
 	os.Exit(exitCode)
@@ -94,14 +97,6 @@ func init() {
 	cobra.OnInitialize()
 
 	flags := Command.PersistentFlags()
-
-	flags.IntVarP(
-		&max,
-		"max",
-		"m",
-		0,
-		"Max limits the recursion depth of visited URLs",
-	)
 
 	flags.StringVarP(
 		&reporter,
@@ -117,6 +112,14 @@ func init() {
 		"o",
 		"",
 		"Output data to the file without pipe but with the spinner :)",
+	)
+
+	flags.StringVarP(
+		&domains,
+		"domains",
+		"d",
+		"",
+		"Domains to follow (as addition to the base url), comma as a delimter",
 	)
 }
 

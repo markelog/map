@@ -1,3 +1,4 @@
+// Package validation provides simple methods for URL validation
 package validation
 
 import (

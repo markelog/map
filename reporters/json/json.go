@@ -1,3 +1,4 @@
+// Package json provides the json reporter
 package json
 
 import (

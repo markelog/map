@@ -1,3 +1,4 @@
+// Package reporters provides various reporter executioners
 package reporters
 
 import (
@@ -25,6 +26,10 @@ func Exist(name string) (ok bool) {
 
 // Execute gets the requested reporter and feeds data to it
 func Execute(name string, data *spider.Result) (string, error) {
+	if data == nil {
+		return "", nil
+	}
+
 	if name == "json" {
 		return json.Execute(data)
 	}

@@ -29,7 +29,7 @@ var _ = Describe("spider", func() {
 			io.WriteString(w, string(html))
 		}))
 
-		spidy = New(ts.URL, 20)
+		spidy = New(ts.URL, "")
 	})
 
 	AfterEach(func() {
@@ -39,11 +39,11 @@ var _ = Describe("spider", func() {
 
 	Describe("Validate", func() {
 		It("Should correct validate the input", func() {
-			Expect(New("http://github.com", 20).Validate()).ToNot(HaveOccurred())
+			Expect(New("http://github.com", "").Validate()).ToNot(HaveOccurred())
 		})
 
 		It("Should flag invalid input", func() {
-			Expect(New("github.com:20", 20).Validate()).To(HaveOccurred())
+			Expect(New("github.com:20", "").Validate()).To(HaveOccurred())
 		})
 	})
 

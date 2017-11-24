@@ -1,3 +1,4 @@
+// Package io provides some various helpful IO related methods
 package io
 
 import (
