@@ -17,12 +17,12 @@ $ map http://example.com
 # Create map and output map in yaml form
 $ map http://example.com --reporter=yaml
 
-# Specify maximum amount of links to check
-$ map http://example.com -r yaml --max=50
-
 # Pipe it
-$ map http://example.com -r yaml -m 50 > example.com.yaml
+$ map http://example.com -r yaml > example.com.yaml
 
 # Or use "out" flag to pipe (so you can see the spinner comparing with previous command :)
-$ map http://example.com -r yaml -m 50 --out=./example.com.yaml
+$ map http://example.com -r yaml --out=./example.com.yaml
+
+# Define several domains
+$ map http://example.com -r yaml --domains=example.net,examples.biz --out=./example.com.yaml
 ```
