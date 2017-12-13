@@ -11,6 +11,7 @@ import (
 
 	"github.com/markelog/map/collect"
 	"github.com/markelog/map/io"
+	"github.com/markelog/map/list"
 	"github.com/markelog/map/validation"
 )
 
@@ -42,6 +43,7 @@ type Spider struct {
 
 	waitGroup *sync.WaitGroup
 	mutex     *sync.Mutex
+	list      *list.List
 
 	path       string
 	collector  *colly.Collector
@@ -50,7 +52,6 @@ type Spider struct {
 
 // New returns new instance of Spider
 func New(path, domains string) *Spider {
-
 	var (
 		data, _        = url.Parse(path)
 		domain         = data.Host
@@ -73,6 +74,7 @@ func New(path, domains string) *Spider {
 
 		waitGroup: &sync.WaitGroup{},
 		mutex:     &sync.Mutex{},
+		list:      list.New(),
 
 		path:       path,
 		collector:  collector,
@@ -89,7 +91,6 @@ func (spider *Spider) Crawl() (progress chan *Progress) {
 
 	go func() {
 		spider.waitGroup.Wait()
-		spider.collector.Wait()
 
 		spider.mutex.Lock()
 		spider.isDone = true
@@ -102,14 +103,6 @@ func (spider *Spider) Crawl() (progress chan *Progress) {
 
 // Get final result
 func (spider Spider) Get() (*Result, error) {
-	spider.waitGroup.Wait()
-	spider.collector.Wait()
-
-	spider.mutex.Lock()
-	spider.isDone = true
-	close(spider.Progress)
-	spider.mutex.Unlock()
-
 	return spider.Result, spider.Error
 }
 
@@ -171,6 +164,13 @@ func (spider *Spider) setWalker() {
 	spider.collector.OnResponse(func(response *colly.Response) {
 		body := response.Body
 
+		// Links might lead to the same page, which we might already
+		// tackled, so we have to check the response body instead
+		if spider.list.Has(body) {
+			return
+		}
+		spider.list.Add(body)
+
 		doc, err := io.MakeDoc(body)
 		if err != nil {
 			spider.waitGroup.Add(1)
@@ -217,10 +217,10 @@ func (spider Spider) request(output *Result, links []string) {
 		context := colly.NewContext()
 		context.Put("parent", output)
 
-		go func(link string) {
+		go func(link string, context *colly.Context) {
 			spider.collector.Request("GET", link, nil, context, nil)
 			spider.waitGroup.Done()
-		}(link)
+		}(link, context)
 	}
 }
 
@@ -237,10 +237,22 @@ func getParent(response *colly.Response) (parent *Result) {
 
 // appendToParent append node to their parent
 func (spider Spider) appendToParent(output *Result, response *colly.Response) {
+	spider.mutex.Lock()
+	defer spider.mutex.Unlock()
+
 	parent := getParent(response)
-	if parent != nil {
-		spider.mutex.Lock()
-		parent.Children = append(parent.Children, output)
-		spider.mutex.Unlock()
+	if parent == nil {
+		return
 	}
+
+	children := parent.Children
+
+	for _, element := range children {
+		if element.URL == output.URL {
+			return
+		}
+	}
+
+	parent.Children = append(parent.Children, output)
+
 }

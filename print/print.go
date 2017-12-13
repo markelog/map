@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/go-errors/errors"
 	"github.com/mgutz/ansi"
 
 	"github.com/markelog/map/print/spinner"
@@ -23,19 +24,24 @@ func ShowError(err error) {
 		return
 	}
 
-	stderr := log.New(os.Stderr, "", 0)
-	red := ansi.Color("> ", "red")
+	var (
+		stderr = log.New(os.Stderr, "", 0)
+		red    = ansi.Color("> ", "red")
+	)
 
 	stderr.Println()
 
-	_, ok := err.(*url.Error)
+	if isDebug() {
+		stderr.Println(errors.Wrap(err, 2).ErrorStack())
+		return
+	}
 
+	_, ok := err.(*url.Error)
 	if ok {
 		stderr.Printf(red+"Error on %v:", err)
-
-	} else {
-		stderr.Printf(red+"%v", err)
+		return
 	}
+	stderr.Printf(red+"%v", err)
 }
 
 // Error shows the error and exit the program with provided exit code
@@ -57,10 +63,9 @@ func Spin(progress chan *spider.Progress) (exitCode int) {
 
 	// Work spinner
 	spin.Start()
-
 	for result := range progress {
 		if result.Error != nil {
-			exitCode = 0
+			exitCode = 1
 
 			spin.Stop()
 			ShowError(result.Error)

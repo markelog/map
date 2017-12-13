@@ -63,8 +63,12 @@ func (me *Spin) Start() {
 	fmt.Println()
 
 	go func() {
-		for me.isDone == false {
+		for {
 			me.mutex.Lock()
+
+			if me.isDone {
+				break
+			}
 
 			me.cursed.MoveUp(2)
 			me.cursed.EraseCurrentLine()

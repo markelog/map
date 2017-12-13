@@ -82,7 +82,7 @@ func Run(cmd *cobra.Command, args []string) {
 
 	if len(serialized) > 0 {
 		// Either print to the console or save it to a file
-		if len(out) > 0 {
+		if len(out) == 0 {
 			fmt.Println(serialized)
 		} else {
 			print.Error(io.WriteFile(out, serialized), 1)
