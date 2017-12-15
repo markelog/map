@@ -253,5 +253,4 @@ func (spider Spider) appendToParent(output *Result, response *colly.Response) {
 	}
 
 	parent.Children = append(parent.Children, output)
-
 }
