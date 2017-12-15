@@ -29,7 +29,6 @@ type Result struct {
 // Progress intermediate data
 type Progress struct {
 	Data  *Result
-	Done  bool
 	Error error
 }
 
