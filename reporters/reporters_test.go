@@ -3,7 +3,8 @@ package reporters_test
 import (
 	"io/ioutil"
 
-	"github.com/bouk/monkey"
+	"bou.ke/monkey"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

@@ -4,7 +4,7 @@ package list
 import (
 	"sync"
 
-	"bitbucket.org/creachadair/cityhash"
+	"github.com/creachadair/cityhash"
 )
 
 // List settings
